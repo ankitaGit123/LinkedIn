@@ -29,3 +29,15 @@ node_modules/
 
 .cph/
 **/.cph/
+
+
+
+
+# env
+.env
+config.env
+*.env
+
+# dependencies
+node_modules
+**/node_modules

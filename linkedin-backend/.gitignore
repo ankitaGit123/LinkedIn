@@ -1,9 +1,7 @@
-# dependencies
-node_modules/
-
-# env files
-config.env
+node_modules
 .env
+config.env
+.DS_Store
 
 # editor / temp files
 .cph/
