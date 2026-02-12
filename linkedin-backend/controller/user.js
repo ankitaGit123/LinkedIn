@@ -71,9 +71,33 @@ exports.login = async (req,res) =>{
         if(!isMatch){
             return res.status(400).json({error: "Invalid email or password"});
         }
+        // let token = jwt.sign({ userId: userExist._id }, process.env.JWT_PRIVATE_KEY);
+        // res.cookie("token", token, {
+        //     httpOnly: true,
+        //     sameSite: "none",
+        //     secure: false,
+        //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        // });
+        // res.status(200).json({message: "Login successful", success: "yes", data: userExist});
+
+
         let token = jwt.sign({ userId: userExist._id }, process.env.JWT_PRIVATE_KEY);
-        res.cookie('token',token,cookieOptions)
-        res.status(200).json({message: "Login successful", success: "yes", data: userExist});
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",   // ✅ change here
+            secure: false,     // localhost
+            path: "/",         // important
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({
+            message: "Login successful",
+            success: "yes",
+            data: userExist
+        });
+
+
     }catch(error){
         console.error(error);
         res.status(500).json({error: "Internal Server Error", message:error.message});
@@ -82,14 +106,47 @@ exports.login = async (req,res) =>{
 
 exports.updateUser = async (req,res) =>{
     try{
-        const { user } = req.body; 
-        const isExist = await User.findById(user._id);
+        const user = req.body?.user ?? req.body;
+        if(!user){
+            return res.status(400).json({ error: "Invalid user payload" });
+        }
+        const updateId = req.user?._id || user._id;
+        if(!updateId){
+            return res.status(400).json({ error: "Invalid user id" });
+        }
+        if(user._id && updateId.toString() !== user._id.toString()){
+            return res.status(403).json({ error: "Not authorized to update this user" });
+        }
+        const isExist = await User.findById(updateId);
         if(!isExist){
             return res.status(404).json({error: "User not found"});
         }
-        const updatedUser = await User.findByIdAndUpdate(isExist._id, user);
+        const allowedFields = [
+            "f_name",
+            "headline",
+            "curr_company",
+            "curr_location",
+            "profilePic",
+            "cover_pic",
+            "about",
+            "skills",
+            "experience",
+            "resume",
+        ];
+        const updateData = {};
+        allowedFields.forEach((field) => {
+            if (user[field] !== undefined) {
+                updateData[field] = user[field];
+            }
+        });
 
-        const userData = await User.findById(req.user._id);
+        const updatedUser = await User.findByIdAndUpdate(
+            isExist._id,
+            updateData,
+            { new: true }
+        );
+
+        const userData = updatedUser || await User.findById(updateId);
         res.status(200).json({
             message: "User updated successfully",
             user: userData
