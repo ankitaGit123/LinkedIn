@@ -11,7 +11,13 @@ const PostSchema = new mongoose.Schema({
 
     },
     imageLink: {
-        type: String,    },
+        type: String,
+    },
+    mediaType: {
+        type: String,
+        enum: ['image', 'video', null],
+        default: null
+    },
     likes: [
         {
             type: mongoose.Schema.Types.ObjectId,

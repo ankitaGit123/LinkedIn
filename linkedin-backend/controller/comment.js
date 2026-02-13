@@ -41,19 +41,23 @@ exports.commentPost = async (req, res) => {
 
 exports.getCommentsByPostId = async (req, res) => {
     try{
-        const { postId } = req.body;
+        const { postId } = req.params;
+        console.log("Fetching comments for postId:", postId);
+        
         const isPostExist = await PostModel.findById(postId);
         if(!isPostExist){
+            console.log("Post not found:", postId);
             return res.status(400).json({ error: "No such post exists" });
         }
         const comments = await CommentModel.find({ post: postId }).sort({ createdAt: -1 }).populate('user','f_name headline profilePic');
+        console.log("Found comments:", comments.length);
         res.status(200).json({ 
             message:"Comments fetched",
             comments:comments
          });
     }catch(err){
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error("Error fetching comments:", err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
        
     }
 }

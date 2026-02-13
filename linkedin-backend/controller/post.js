@@ -3,10 +3,10 @@ const PostModel = require('../models/post');
 
 exports.addPost = async (req, res) => {
     try{
-        const { desc, imageLink } = req.body;
+        const { desc, imageLink, mediaType } = req.body;
         let userId = req.user._id;
 
-        const addPost = new PostModel({ user: userId, desc, imageLink })
+        const addPost = new PostModel({ user: userId, desc, imageLink, mediaType })
 
         if(!addPost){
             return res.status(400).json({ error: "Something Went Wrong" });
@@ -109,6 +109,59 @@ exports.getAllPostsByUserId = async (req, res) => {
         res.status(200).json({
             message: "Fetched data successfully",
             posts: posts
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error", message: error.message });
+    }
+}
+
+exports.deletePost = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const userId = req.user._id;
+
+        const post = await PostModel.findById(postId);
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        // Check if user owns the post
+        if (post.user.toString() !== userId.toString()) {
+            return res.status(403).json({ error: "You can only delete your own posts" });
+        }
+
+        await PostModel.findByIdAndDelete(postId);
+        res.status(200).json({ message: "Post deleted successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error", message: error.message });
+    }
+}
+
+exports.updatePost = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { desc } = req.body;
+        const userId = req.user._id;
+
+        const post = await PostModel.findById(postId);
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        // Check if user owns the post
+        if (post.user.toString() !== userId.toString()) {
+            return res.status(403).json({ error: "You can only edit your own posts" });
+        }
+
+        post.desc = desc;
+        await post.save();
+
+        const updatedPost = await PostModel.findById(postId).populate("user", "-password");
+        res.status(200).json({ 
+            message: "Post updated successfully",
+            post: updatedPost
         });
     } catch (error) {
         console.error(error);
