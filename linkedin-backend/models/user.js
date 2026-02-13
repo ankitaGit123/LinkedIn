@@ -76,6 +76,8 @@ const UserSchema = new mongoose.Schema({
         }
     ],
     resume: {
+        type: String,
+        default: ""
     }
 },{timestamps:true}); //when user edits their profile
 
