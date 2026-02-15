@@ -33,8 +33,7 @@ exports.loginThroughGmail = async (req,res) =>{
             });
         }
         let jwttoken = jwt.sign({ userId: userExist._id }, process.env.JWT_PRIVATE_KEY);
-        res.cookie('token',jwttoken,cookieOptions)
-        res.status(200).json({user: userExist});
+        res.status(200).json({user: userExist, token: jwttoken});
     }catch(error){
         console.error(error);
         res.status(500).json({error: "Internal Server Error", message:error.message});
@@ -53,7 +52,8 @@ exports.register = async (req,res) =>{
        const hashedPassword = await bcrypt.hash(password,10);
        const newUser = new User({ email, password: hashedPassword, f_name });
        await newUser.save();
-       res.status(201).json({message: "User registered successfully", success: "yes", data: newUser});
+       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_PRIVATE_KEY);
+       res.status(201).json({message: "User registered successfully", success: "yes", data: newUser, token});
     }catch(error){
         console.error(error);
         res.status(500).json({error: "Internal Server Error", message:error.message});
@@ -83,18 +83,11 @@ exports.login = async (req,res) =>{
 
         let token = jwt.sign({ userId: userExist._id }, process.env.JWT_PRIVATE_KEY);
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            sameSite: "None",
-            secure: true,
-            path: "/",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
         res.status(200).json({
             message: "Login successful",
             success: "yes",
-            data: userExist
+            data: userExist,
+            token
         });
 
 
@@ -356,5 +349,5 @@ exports.removeFromFriendsList = async (req,res) =>{
 }
 
 exports.logout = async (req,res) =>{
-    res.clearCookie('token', cookieOptions).json({ message: "Logout successful" });
+    res.status(200).json({ message: "Logout successful" });
 }
