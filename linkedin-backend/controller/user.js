@@ -8,8 +8,8 @@ const NotificationModel = require('../models/notification');
 
 const cookieOptions = {
     httpOnly: true,
-    secure: false, //set to true in production
-    sameSite: 'Lax' //set None in production
+    secure: true,
+    sameSite: 'None'
 };
 
 exports.loginThroughGmail = async (req,res) =>{
@@ -85,9 +85,9 @@ exports.login = async (req,res) =>{
 
         res.cookie("token", token, {
             httpOnly: true,
-            sameSite: "lax",   // ✅ change here
-            secure: false,     // localhost
-            path: "/",         // important
+            sameSite: "None",
+            secure: true,
+            path: "/",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
