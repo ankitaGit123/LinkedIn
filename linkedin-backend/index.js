@@ -87,8 +87,30 @@ const io = new Server(server, {
   },
 });
 
+// Make io accessible to routes
+app.set('io', io);
+
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
+
+  // User joins their own notification room
+  socket.on("joinUser", (userId) => {
+    console.log(`User ${userId} joined their notification room`);
+    socket.join(`user_${userId}`);
+  });
+
+  // Join a conversation room
+  socket.on("joinConversation", (conversationId) => {
+    console.log(`User ${socket.id} joined conversation ${conversationId}`);
+    socket.join(conversationId);
+  });
+
+  // Send message to a conversation
+  socket.on("sendMessage", (conversationId, message) => {
+    console.log(`Message sent to conversation ${conversationId}:`, message);
+    // Broadcast to all users in the conversation except sender
+    socket.to(conversationId).emit("receiveMessage", message);
+  });
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);

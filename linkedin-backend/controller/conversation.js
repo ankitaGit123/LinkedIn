@@ -13,17 +13,41 @@ exports.addConversation = async (req, res) => {
             members: { $all: [senderId, recieverId] }
 
         });
+        
+        let conversationId;
+        
         if( !isConvExist){
             let newConversation = new ConversationModel({
                 members: [senderId, recieverId]
             });
             await newConversation.save();
+            conversationId = newConversation._id;
             let addMessage = new MessageModel({ sender: req.user._id, conversation: newConversation._id, message });
             await addMessage.save();
         }else{
+            conversationId = isConvExist._id;
             let addMessage = new MessageModel({ sender: req.user._id, conversation: isConvExist._id, message });
             await addMessage.save();
         }
+        
+        // Create notification for receiver
+        const notification = await NotificationModel.create({
+            sender: senderId,
+            receiver: recieverId,
+            content: `${req.user.f_name} sent you a message`,
+            type: 'message',
+            conversationId: conversationId
+        });
+        
+        // Emit real-time notification via socket.io
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user_${recieverId}`).emit('newNotification', {
+                notification,
+                count: await NotificationModel.countDocuments({ receiver: recieverId, isRead: false })
+            });
+        }
+        
         res.status(200).json({ message: "Message sent" });
     }catch(error){
         console.error("Error adding conversation:", error);
